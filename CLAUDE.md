@@ -19,9 +19,13 @@ project state, read the Obsidian vault before acting.
 ## Repository Layout
 
 ```
-CLAUDE.md                    # You are here — project-wide instructions
+CLAUDE.md                    # You are here — project-wide instructions (Claude Code)
+AGENTS.md                    # Project-wide instructions (Codex)
+.claude/settings.json        # Claude Code hooks and tool config
+.codex/config.toml           # Codex project configuration
 docs/obsidian/               # Obsidian vault — project memory and coordination layer
-  CLAUDE.md                  # Vault-specific instructions (note hygiene, structure)
+  CLAUDE.md                  # Vault-specific instructions (Claude Code)
+  AGENTS.md                  # Vault-specific instructions (Codex)
   00-overview/               # What this project is
   01-decisions/              # Why key choices were made (ADRs)
   02-operating-model/        # How work flows between agents and humans
@@ -40,7 +44,7 @@ Agents coordinate through files, not memory:
 1. **Decisions** are recorded as ADRs in `01-decisions/`
 2. **Task handoffs** between agents go in `04-execution/`
 3. **Capability boundaries** are documented in `03-capabilities/`
-4. **Agent-specific instructions** live in the relevant CLAUDE.md layer
+4. **Agent-specific instructions** live in `CLAUDE.md` (Claude Code) and `AGENTS.md` (Codex)
 
 When starting a session:
 - Read this file for project context
@@ -53,7 +57,7 @@ When starting a session:
 - All documentation lives in `docs/obsidian/` and must follow vault rules (see `docs/obsidian/CLAUDE.md`)
 - Source code goes in `src/` with language-appropriate structure
 - Scripts go in `scripts/` with executable permissions and usage comments
-- No loose files in the repo root except `CLAUDE.md`, `.gitignore`, `LICENSE`, and config files
+- No loose files in the repo root except `CLAUDE.md`, `AGENTS.md`, `.gitignore`, `LICENSE`, and config files
 
 ## Rules for All Agents
 
@@ -71,5 +75,8 @@ Instructions cascade. More specific files override more general ones:
 
 1. `CLAUDE.md` (this file) — project-wide rules
 2. `docs/obsidian/CLAUDE.md` — vault-specific rules
-3. Future: `src/CLAUDE.md` — source code conventions
-4. Future: `.claude/settings.json` — Claude Code tool configuration
+3. `.claude/settings.json` — Claude Code hooks (vault validation)
+4. Future: `src/CLAUDE.md` — source code conventions
+
+Codex reads a parallel chain: `AGENTS.md` → `docs/obsidian/AGENTS.md` → `.codex/config.toml`.
+See `docs/obsidian/01-decisions/ADR-002-codex-instruction-files.md` for details.

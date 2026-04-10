@@ -1,0 +1,13 @@
+# .codex/config.toml — Project-level Codex configuration
+#
+# This file configures Codex CLI behavior for this project.
+# See: https://developers.openai.com/codex/config-reference
+
+# Fall back to CLAUDE.md if AGENTS.md is missing in a subdirectory.
+# This ensures Codex picks up shared instructions in directories where
+# only Claude Code's instruction file exists.
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+# Increase the doc size limit since we have two instruction layers
+# (root AGENTS.md + vault AGENTS.md). Default is 32768 (32 KiB).
+project_doc_max_bytes = 65536

@@ -8,3 +8,4 @@ Each ADR follows the template in `[[_templates/decision-record]]`.
 | ID | Title | Status | Date |
 |---|---|---|---|
 | ADR-001 | [[ADR-001-dual-agent-architecture]] | Accepted | 2026-04-10 |
+| ADR-002 | [[ADR-002-codex-instruction-files]] | Accepted | 2026-04-10 |

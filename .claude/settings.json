@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreCommit": [
+      {
+        "command": "bash -c './scripts/check-vault-hook.sh'",
+        "description": "Validate Obsidian vault integrity. Informational under 15 notes; blocks commit on warnings at 15+ notes.",
+        "enabled": true
+      }
+    ],
+    "SessionStart": [
+      {
+        "command": "bash -c './scripts/validate-vault.sh 2>/dev/null || true'",
+        "description": "Show vault health on session start (informational, never blocks).",
+        "enabled": true
+      }
+    ]
+  }
+}

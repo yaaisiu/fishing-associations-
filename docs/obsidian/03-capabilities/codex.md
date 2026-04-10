@@ -55,16 +55,22 @@ See [[02-operating-model/agent-coordination]] for the full protocol.
 
 ## Instruction Files
 
-Codex may need its own instruction file format. Potential locations:
+Codex reads `AGENTS.md` files natively (not `CLAUDE.md`). See
+[[01-decisions/ADR-002-codex-instruction-files]] for the full rationale.
 
-- `CODEX.md` at repo root (if Codex supports a similar convention)
-- Inline comments in Xcode project files
-- A dedicated `03-capabilities/codex-instructions.md` note that Codex reads
+The instruction files Codex reads:
 
-This will be determined once Codex's instruction-file behavior is confirmed.
+1. `AGENTS.md` (project root) — project-wide instructions scoped to Codex's iOS role
+2. `docs/obsidian/AGENTS.md` — vault rules for when Codex creates or edits notes
+3. `.codex/config.toml` — project-level Codex configuration
+
+Fallback: `.codex/config.toml` configures `CLAUDE.md` as a fallback, so Codex
+picks up subdirectory instructions (e.g., future `src/CLAUDE.md`) even without
+a matching `AGENTS.md` in that directory.
 
 ## Related
 
 - [[claude-code]] — Claude Code's complementary role
 - [[02-operating-model/agent-coordination]] — How coordination works
 - [[01-decisions/ADR-001-dual-agent-architecture]] — Why two agents
+- [[01-decisions/ADR-002-codex-instruction-files]] — Instruction file strategy
