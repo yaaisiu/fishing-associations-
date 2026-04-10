@@ -9,6 +9,11 @@
     ],
     "SessionStart": [
       {
+        "command": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && ./scripts/session-sync.sh 2>/dev/null || true'",
+        "description": "Fetch from origin and report sync status (behind, ahead, diverged, recent activity).",
+        "enabled": true
+      },
+      {
         "command": "bash -c 'cd \"$(git rev-parse --show-toplevel)\" && ./scripts/validate-vault.sh 2>/dev/null || true'",
         "description": "Show vault health on session start (informational, never blocks).",
         "enabled": true

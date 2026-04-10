@@ -53,6 +53,40 @@ When an agent starts a new session:
 4. Check git log for recent changes by the other agent
 5. Proceed with the highest-priority pending work
 
+## Branch and PR Workflow
+
+Agents never push directly to `main`. Each agent works on its own feature
+branch and merges to `main` via pull request with human approval.
+
+```
+codex/feature-branch ──PR──┐
+                            ├──► main (human approves)
+claude/feature-branch ──PR──┘
+```
+
+### Branch conventions
+
+- Claude Code branches: `claude/<description>`
+- Codex branches: `codex/<description>`
+- Never force-push to `main`
+
+### Sync mechanism
+
+- **Session start:** Claude Code's `session-sync.sh` hook fetches from origin
+  and reports whether the branch is behind, ahead, or diverged. It also shows
+  recent commits across all remote branches so each agent sees the other's work.
+- **CI:** A GitHub Actions workflow (`.github/workflows/validate-vault.yml`)
+  runs vault validation in strict mode on every PR to `main` and on pushes
+  that touch `docs/obsidian/`.
+- **Local:** Agents should `git pull` if the sync hook reports they are behind.
+
+### PR etiquette
+
+- Keep PRs focused — one logical change or feature per PR
+- Both agents may have PRs open simultaneously; if they touch overlapping files,
+  coordinate via handoff before merging
+- The human reviews and merges; agents do not merge their own PRs
+
 ## Conflict Resolution
 
 - If both agents modified the same file, the human resolves the conflict

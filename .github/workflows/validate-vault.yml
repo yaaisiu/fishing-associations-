@@ -1,0 +1,24 @@
+name: Validate Vault
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/obsidian/**'
+      - 'scripts/validate-vault.sh'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/obsidian/**'
+      - 'scripts/validate-vault.sh'
+
+jobs:
+  validate:
+    name: Vault Integrity Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run vault validation (strict)
+        run: ./scripts/validate-vault.sh --strict
