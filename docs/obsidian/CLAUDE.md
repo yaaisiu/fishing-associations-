@@ -41,10 +41,17 @@ tags:
 ---
 ```
 
+**General notes** use these status values:
 - `status: active` — current and authoritative
 - `status: draft` — work in progress, may be incomplete
 - `status: superseded` — replaced by another note (link to replacement)
 - `status: archived` — no longer relevant but preserved for history
+
+**ADRs** use a domain-specific status set (see `_templates/decision-record.md`):
+- `status: proposed` — under discussion, not yet decided
+- `status: accepted` — agreed upon and in effect
+- `status: superseded` — replaced by a newer ADR (link to replacement)
+- `status: deprecated` — no longer recommended, kept for historical context
 
 ## Linking Rules
 
@@ -76,6 +83,8 @@ When creating a new note:
 Available templates:
 - `_templates/note.md` — general-purpose note
 - `_templates/decision-record.md` — Architecture Decision Record
+- `_templates/task.md` — task definition for `04-execution/`
+- `_templates/handoff.md` — cross-agent handoff for `04-execution/`
 
 ## What Belongs Here vs. Elsewhere
 
@@ -87,7 +96,8 @@ Available templates:
 | Source code | `src/` |
 | Build scripts, automation | `scripts/` |
 | Claude Code tool config | `.claude/settings.json` |
-| Task definitions for hooks | `scripts/` or `.claude/` |
+| Hook configuration | `.claude/settings.json` |
+| Hook scripts | `scripts/` |
 
 ## Agent Behavior in the Vault
 

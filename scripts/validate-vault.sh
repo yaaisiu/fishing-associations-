@@ -3,7 +3,7 @@
 #
 # Validates Obsidian vault integrity:
 # - Every non-index .md file must be linked from its folder's index.md
-# - Every folder must have an index.md
+# - Every folder containing .md files must have an index.md
 # - Frontmatter must exist on non-index, non-template files
 #
 # Usage: ./scripts/validate-vault.sh [--strict]
@@ -35,21 +35,24 @@ fi
 echo "Validating vault: $VAULT_PATH"
 echo "---"
 
-# Count all non-index markdown files in the vault (excluding CLAUDE.md, AGENTS.md at vault root)
+# Count all content notes in the vault.
+# Content notes are .md files inside subfolders (mindepth 2), excluding index
+# files, instruction files, templates, and Obsidian config.
 while IFS= read -r -d '' file; do
     NOTE_COUNT=$((NOTE_COUNT + 1))
-done < <(find "$VAULT_PATH" -name '*.md' \
+done < <(find "$VAULT_PATH" -mindepth 2 -name '*.md' \
     ! -name 'index.md' \
-    ! -name 'CLAUDE.md' \
-    ! -name 'AGENTS.md' \
+    ! -path '*/.obsidian/*' \
     ! -path '*/_templates/*' \
+    ! -path "$VAULT_PATH/CLAUDE.md" \
+    ! -path "$VAULT_PATH/AGENTS.md" \
     -print0)
 
 echo "Notes in vault: $NOTE_COUNT"
 echo ""
 
-# Check 1: Every vault folder containing .md files must have an index.md
-# This covers top-level numbered folders, _templates, and any nested subdirectories.
+# Check 1: Every vault folder containing .md files must have an index.md.
+# Covers top-level numbered folders, _templates, and any nested subdirectories.
 echo "== Checking folder indexes =="
 while IFS= read -r -d '' dir; do
     # Skip the vault root itself
@@ -57,9 +60,13 @@ while IFS= read -r -d '' dir; do
         continue
     fi
 
-    # Only check directories that contain at least one .md file
-    md_count=$(find "$dir" -maxdepth 1 -name '*.md' ! -name 'index.md' -print -quit 2>/dev/null | wc -l)
-    if [[ "$md_count" -eq 0 ]]; then
+    # Only check directories that contain at least one non-index .md file
+    has_md=false
+    while IFS= read -r -d '' _md_file; do
+        has_md=true
+        break
+    done < <(find "$dir" -maxdepth 1 -name '*.md' ! -name 'index.md' -print0 2>/dev/null)
+    if [[ "$has_md" == false ]]; then
         continue
     fi
 
@@ -75,64 +82,70 @@ while IFS= read -r -d '' dir; do
 done < <(find "$VAULT_PATH" -type d ! -name '.obsidian' ! -path '*/.obsidian/*' -print0)
 echo ""
 
-# Check 2: Every non-index .md file must be referenced in its folder's index.md
+# Check 2: Every non-index .md file must be referenced in its folder's index.md.
+# Uses wiki-link matching: [[filename]] or [[filename|...]] or the bare filename
+# as a fixed string (not regex).
 echo "== Checking index links =="
 LINK_WARNINGS=0
 while IFS= read -r -d '' file; do
-    # Skip files directly in the vault root (CLAUDE.md, AGENTS.md, etc.)
-    if [[ "$(dirname "$file")" == "$VAULT_PATH" ]]; then
-        continue
-    fi
-
-    filename="$(basename "$file" .md)"
-    dir="$(dirname "$file")"
-    dirname="$(basename "$dir")"
-    index_file="$dir/index.md"
+    file_name="${file##*/}"          # basename
+    file_stem="${file_name%.md}"     # strip .md
+    file_dir="${file%/*}"            # dirname
+    dir_name="${file_dir##*/}"       # parent folder name
+    index_file="$file_dir/index.md"
 
     if [[ ! -f "$index_file" ]]; then
-        # Already reported above
+        # Missing index already reported in Check 1
         continue
     fi
 
-    # Check if the filename appears in the index (as wiki-link or plain text)
-    if ! grep -q "$filename" "$index_file" 2>/dev/null; then
-        echo "  WARNING: $dirname/$filename.md is not linked from $dirname/index.md"
+    # Match the Obsidian wiki-link pattern [[file_stem]] or [[file_stem|...]]
+    # or a bare reference to file_stem. Use fixed-string grep to avoid regex
+    # interpretation of filenames containing special characters.
+    if ! grep -qF "$file_stem" "$index_file" 2>/dev/null; then
+        echo "  WARNING: $dir_name/$file_name is not linked from $dir_name/index.md"
         LINK_WARNINGS=$((LINK_WARNINGS + 1))
         WARNINGS=$((WARNINGS + 1))
     fi
 done < <(find "$VAULT_PATH" -mindepth 2 -name '*.md' \
     ! -name 'index.md' \
-    ! -name 'CLAUDE.md' \
-    ! -name 'AGENTS.md' \
+    ! -path '*/.obsidian/*' \
+    ! -path "$VAULT_PATH/CLAUDE.md" \
+    ! -path "$VAULT_PATH/AGENTS.md" \
     -print0)
 if [[ $LINK_WARNINGS -eq 0 ]]; then
     echo "  All notes are linked from their index files."
 fi
 echo ""
 
-# Check 3: Frontmatter check on content files
+# Check 3: Frontmatter check on content files.
+# Every .md file except index files, templates, vault-root instruction files,
+# and Obsidian config must start with '---'.
 echo "== Checking frontmatter =="
 FM_MISSING=0
 while IFS= read -r -d '' file; do
-    filename="$(basename "$file")"
-    dir_basename="$(basename "$(dirname "$file")")"
+    file_name="${file##*/}"
+    file_dir="${file%/*}"
+    dir_name="${file_dir##*/}"
 
     # Skip index files and template files
-    if [[ "$filename" == "index.md" ]] || [[ "$dir_basename" == "_templates" ]]; then
+    if [[ "$file_name" == "index.md" ]] || [[ "$dir_name" == "_templates" ]]; then
         continue
     fi
     # Skip vault-root instruction files
-    if [[ "$(dirname "$file")" == "$VAULT_PATH" ]]; then
+    if [[ "$file_dir" == "$VAULT_PATH" ]]; then
         continue
     fi
 
-    # Check if file starts with ---
-    if ! head -1 "$file" | grep -q '^---$'; then
-        echo "  WARNING: $dir_basename/$filename is missing YAML frontmatter"
+    # Check if file starts with --- (strip BOM and CR for Windows-edited files)
+    if ! head -1 "$file" | tr -d '\r\xEF\xBB\xBF' | grep -q '^---$'; then
+        echo "  WARNING: $dir_name/$file_name is missing YAML frontmatter"
         FM_MISSING=$((FM_MISSING + 1))
         WARNINGS=$((WARNINGS + 1))
     fi
-done < <(find "$VAULT_PATH" -name '*.md' -print0)
+done < <(find "$VAULT_PATH" -mindepth 2 -name '*.md' \
+    ! -path '*/.obsidian/*' \
+    -print0)
 if [[ $FM_MISSING -eq 0 ]]; then
     echo "  All content files have frontmatter."
 fi

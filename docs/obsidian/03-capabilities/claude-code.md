@@ -45,8 +45,8 @@ Claude Code reads these files automatically:
 
 1. `CLAUDE.md` (project root) — always read at session start
 2. `docs/obsidian/CLAUDE.md` — read when working in the vault
-3. Future: `src/CLAUDE.md` — read when working in source code
-4. Future: `.claude/settings.json` — tool and hook configuration
+3. `.claude/settings.json` — hook configuration (vault validation on pre-commit and session start)
+4. Future: `src/CLAUDE.md` — read when working in source code
 
 ## Related
 

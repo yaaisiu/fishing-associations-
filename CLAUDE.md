@@ -48,8 +48,9 @@ Agents coordinate through files, not memory:
 
 When starting a session:
 - Read this file for project context
-- Check `04-execution/` for pending tasks or handoffs
-- Check `01-decisions/` for recent decisions that affect your work
+- Check `04-execution/index.md` for pending tasks or handoffs
+- Check `01-decisions/index.md` for recent decisions that affect your work
+- Check git log for recent changes by the other agent
 - Prefer updating existing notes over creating new ones
 
 ## File Conventions

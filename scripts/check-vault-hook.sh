@@ -18,17 +18,24 @@ if [[ ! -d "$VAULT_PATH" ]]; then
     exit 0
 fi
 
-# Count content notes (excluding index, templates, instruction files)
-NOTE_COUNT=$(find "$VAULT_PATH" -name '*.md' \
+# Count content notes using the same criteria as validate-vault.sh:
+# mindepth 2, exclude index, .obsidian, templates, vault-root instruction files.
+# Use null-delimited read loop (safe for filenames with spaces/newlines).
+NOTE_COUNT=0
+while IFS= read -r -d '' _file; do
+    NOTE_COUNT=$((NOTE_COUNT + 1))
+done < <(find "$VAULT_PATH" -mindepth 2 -name '*.md' \
     ! -name 'index.md' \
-    ! -name 'CLAUDE.md' \
-    ! -name 'AGENTS.md' \
+    ! -path '*/.obsidian/*' \
     ! -path '*/_templates/*' \
-    -print | wc -l)
+    ! -path "$VAULT_PATH/CLAUDE.md" \
+    ! -path "$VAULT_PATH/AGENTS.md" \
+    -print0)
 
 if [[ "$NOTE_COUNT" -ge "$THRESHOLD" ]]; then
     echo "Vault has $NOTE_COUNT notes (>= $THRESHOLD threshold). Running strict validation..."
-    exec "$REPO_ROOT/scripts/validate-vault.sh" --strict
+    "$REPO_ROOT/scripts/validate-vault.sh" --strict
+    exit $?
 else
     echo "Vault has $NOTE_COUNT notes (< $THRESHOLD threshold). Running informational validation..."
     "$REPO_ROOT/scripts/validate-vault.sh" || true
