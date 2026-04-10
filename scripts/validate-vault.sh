@@ -48,24 +48,42 @@ done < <(find "$VAULT_PATH" -name '*.md' \
 echo "Notes in vault: $NOTE_COUNT"
 echo ""
 
-# Check 1: Every numbered folder and _templates must have an index.md
+# Check 1: Every vault folder containing .md files must have an index.md
+# This covers top-level numbered folders, _templates, and any nested subdirectories.
 echo "== Checking folder indexes =="
-for dir in "$VAULT_PATH"/[0-9][0-9]-* "$VAULT_PATH"/_templates; do
-    if [[ -d "$dir" ]]; then
-        dirname="$(basename "$dir")"
-        if [[ ! -f "$dir/index.md" ]]; then
-            echo "  ERROR: Missing index.md in $dirname/"
-            ERRORS=$((ERRORS + 1))
-        else
-            echo "  OK: $dirname/index.md exists"
-        fi
+while IFS= read -r -d '' dir; do
+    # Skip the vault root itself
+    if [[ "$dir" == "$VAULT_PATH" ]]; then
+        continue
     fi
-done
+
+    # Only check directories that contain at least one .md file
+    md_count=$(find "$dir" -maxdepth 1 -name '*.md' ! -name 'index.md' -print -quit 2>/dev/null | wc -l)
+    if [[ "$md_count" -eq 0 ]]; then
+        continue
+    fi
+
+    # Build a relative path for display
+    rel_dir="${dir#"$VAULT_PATH/"}"
+
+    if [[ ! -f "$dir/index.md" ]]; then
+        echo "  ERROR: Missing index.md in $rel_dir/"
+        ERRORS=$((ERRORS + 1))
+    else
+        echo "  OK: $rel_dir/index.md exists"
+    fi
+done < <(find "$VAULT_PATH" -type d ! -name '.obsidian' ! -path '*/.obsidian/*' -print0)
 echo ""
 
 # Check 2: Every non-index .md file must be referenced in its folder's index.md
 echo "== Checking index links =="
+LINK_WARNINGS=0
 while IFS= read -r -d '' file; do
+    # Skip files directly in the vault root (CLAUDE.md, AGENTS.md, etc.)
+    if [[ "$(dirname "$file")" == "$VAULT_PATH" ]]; then
+        continue
+    fi
+
     filename="$(basename "$file" .md)"
     dir="$(dirname "$file")"
     dirname="$(basename "$dir")"
@@ -79,15 +97,15 @@ while IFS= read -r -d '' file; do
     # Check if the filename appears in the index (as wiki-link or plain text)
     if ! grep -q "$filename" "$index_file" 2>/dev/null; then
         echo "  WARNING: $dirname/$filename.md is not linked from $dirname/index.md"
+        LINK_WARNINGS=$((LINK_WARNINGS + 1))
         WARNINGS=$((WARNINGS + 1))
     fi
-done < <(find "$VAULT_PATH" -name '*.md' \
+done < <(find "$VAULT_PATH" -mindepth 2 -name '*.md' \
     ! -name 'index.md' \
     ! -name 'CLAUDE.md' \
     ! -name 'AGENTS.md' \
-    ! -path "$VAULT_PATH/*.md" \
     -print0)
-if [[ $WARNINGS -eq 0 ]]; then
+if [[ $LINK_WARNINGS -eq 0 ]]; then
     echo "  All notes are linked from their index files."
 fi
 echo ""
